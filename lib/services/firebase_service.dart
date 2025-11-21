@@ -123,6 +123,15 @@ class FirebaseService {
     await _auth.signOut();
   }
 
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      debugPrint('FirebaseService.sendPasswordResetEmail error: $e');
+      rethrow;
+    }
+  }
+
   // User Data
   Future<void> saveUserData(String uid, String name, String email, String phone) async {
     await _firestore.collection('users').doc(uid).set({

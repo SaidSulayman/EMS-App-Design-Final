@@ -59,7 +59,15 @@ class AuthProvider extends ChangeNotifier {
 
       final credential = await _firebaseService.signInWithEmail(email, password);
       if (credential?.user != null) {
-        await _loadUserData(credential!.user!.uid);
+        _isAuthenticated = true;
+        _errorMessage = null;
+        notifyListeners();
+        // Load user data asynchronously without blocking the login response
+        _loadUserData(credential!.user!.uid).then((_) {
+          debugPrint('AuthProvider.login: User data loaded successfully');
+        }).catchError((e) {
+          debugPrint('AuthProvider.login: Error loading user data: $e');
+        });
         return true;
       }
       return false;
@@ -153,8 +161,31 @@ class AuthProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Logout failed: $e';
+      _errorMessage = 'Logout failed';
       notifyListeners();
+    }
+  }
+
+  Future<bool> resetPassword(String email) async {
+    try {
+      _errorMessage = null;
+      notifyListeners();
+      await _firebaseService.sendPasswordResetEmail(email);
+      _errorMessage = null;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      if (e is FirebaseAuthException) {
+        debugPrint('AuthProvider.resetPassword FirebaseAuthException: code=${e.code}');
+        _errorMessage = e.code == 'user-not-found' 
+            ? 'No account found with this email'
+            : 'Failed to send reset email';
+      } else {
+        debugPrint('AuthProvider.resetPassword error: $e');
+        _errorMessage = 'Failed to send reset email';
+      }
+      notifyListeners();
+      return false;
     }
   }
 }
