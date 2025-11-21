@@ -63,7 +63,7 @@ class FirebaseService {
         final provider = GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
-        final userCredential = await _auth.signInWithPopup(provider);
+         final userCredential = await _auth.signInWithPopup(provider);
 
         // Save user data if new user
         if (userCredential.user != null) {

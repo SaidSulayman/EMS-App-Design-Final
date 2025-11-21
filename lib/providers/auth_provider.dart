@@ -136,18 +136,31 @@ class AuthProvider extends ChangeNotifier {
 
       final credential = await _firebaseService.signInWithGoogle();
       if (credential?.user != null) {
-        await _loadUserData(credential!.user!.uid);
+         _isAuthenticated = true;
+         _errorMessage = null;
+         notifyListeners();
+         // Load user data asynchronously without blocking
+         _loadUserData(credential!.user!.uid).catchError((e) {
+           debugPrint('AuthProvider.signInWithGoogle: Error loading user data: $e');
+         });
         return true;
       }
       return false;
     } catch (e) {
       if (e is FirebaseAuthException) {
         debugPrint('AuthProvider.signInWithGoogle FirebaseAuthException: code=${e.code} message=${e.message}');
+             // Handle specific popup errors gracefully
+             if (e.code == 'popup-closed-by-user') {
+               _errorMessage = 'Sign in cancelled';
+             } else if (e.code == 'cancelled') {
+               _errorMessage = 'Sign in cancelled';
+             } else {
+               _errorMessage = 'Sign in failed';
+             }
       } else {
         debugPrint('AuthProvider.signInWithGoogle unexpected error: $e');
+        _errorMessage = 'Sign in failed';
       }
-      // Keep UI message generic to avoid exposing internals
-      _errorMessage = 'Sign in failed';
       notifyListeners();
       return false;
     }
